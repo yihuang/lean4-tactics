@@ -28,13 +28,10 @@ Example: prove `P → Q → P` (first projection).
 -/
 theorem basic_intro_multi (P Q : Prop) : P → Q → P := by
   -- ⊢  `P → Q → P`
-  intro hp
-  -- `hp : P`
-  -- ⊢  `Q → P`
-  intro hq
+  intro hp hq
   -- `hq : Q`, `hp : P`
   -- ⊢  `P`
-  exact hp      -- we ignore `hq`
+  exact hp
 
 /--
 `apply`: matches the goal's conclusion against the conclusion of a hypothesis
@@ -45,7 +42,7 @@ Example: modus ponens — from `P` and `P → Q`, derive `Q`.
 theorem basic_apply (P Q : Prop) (hp : P) (h : P → Q) : Q := by
   -- ⊢  `Q`
   apply h
-  -- New goal: `P`  (we need to supply the premise of `h`)
+  -- ⊢  `P`
   exact hp
 
 /--
@@ -54,8 +51,9 @@ theorem basic_apply (P Q : Prop) (hp : P) (h : P → Q) : Q := by
 theorem basic_apply_chain (P Q R : Prop) (hp : P) (hq : Q) (h : P → Q → R) : R := by
   -- ⊢  `R`
   apply h
-  -- Two new goals: `P` and `Q`
+  -- ⊢  `P`
   · exact hp    -- first subgoal
+  -- ⊢  `Q`
   · exact hq    -- second subgoal
 
 /--
@@ -80,7 +78,11 @@ theorem basic_refine_and_comm (P Q : Prop) : P ∧ Q → Q ∧ P := by
   -- ⊢  `Q ∧ P`
   refine And.intro ?_ ?_
   -- Two new subgoals: `Q` and `P`
+  -- `h : P ∧ Q`
+  -- ⊢  `Q`
   · exact h.right
+  -- `h : P ∧ Q`
+  -- ⊢  `P`
   · exact h.left
 
 /--
