@@ -24,6 +24,7 @@ the Lean infoview.
 | `Grind` | `grind` (SMT automation: congruence closure, arithmetic, E‑matching) |
 | `Mvcgen` | `mvcgen` (monadic verification condition generator) |
 | `Relation` | `symm`, `apply_assumption`, `ac_rfl` |
+| `Verification` | software verification patterns: `induction`, `omega`, `calc`, `native_decide`, `simp`, `by_cases` |
 
 ## How to use
 
