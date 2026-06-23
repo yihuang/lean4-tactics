@@ -109,7 +109,7 @@ theorem simpa_example (n : Nat) : (fun x : Nat => 0 + x) n = n := by
   -- `simp` can't handle the lambda directly; `dsimp` first
   dsimp
   -- ⊢ `0 + n = n`
-  simpa
+  simp
 
 /--
 `simp` with all hypotheses via `simp [*]` is not recommended (* is fragile),

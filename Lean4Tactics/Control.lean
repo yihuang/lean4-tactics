@@ -156,7 +156,7 @@ theorem case_induction (n : Nat) : 0 + n = n := by
   case succ n ih =>
     -- `n : Nat`, `ih : 0 + n = n`
     -- ⊢ `0 + Nat.succ n = Nat.succ n`
-    simp [ih]
+    simp
 
 /--
 `case` can also rename the introduced variables with `case succ n ih =>`.
@@ -170,4 +170,4 @@ theorem case_rename (n : Nat) : n + 0 = n := by
     -- `m` replaces the auto-generated name `n`
     -- `ih : m + 0 = m`
     -- ⊢ `Nat.succ m + 0 = Nat.succ m`
-    simp [ih]
+    simp

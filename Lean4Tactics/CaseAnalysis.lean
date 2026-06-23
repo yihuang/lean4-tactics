@@ -64,7 +64,7 @@ theorem induction_nat_add_zero (n : Nat) : 0 + n = n := by
   | succ n ih =>
       -- Inductive step: assume `ih : 0 + n = n`, prove for `succ n`
       -- ⊢  `0 + Nat.succ n = Nat.succ n`
-      simp [ih]
+      simp
 
 /--
 `induction` with `generalizing`: when the induction hypothesis needs to work

@@ -61,12 +61,10 @@ Useful when you want to apply a lemma that expects a different goal shape.
 
 Example: from `P`, `Q`, prove `P`, using `revert` to temporarily drop `Q`.
 -/
-theorem revert_basic (P Q : Prop) (hp : P) (hq : Q) : P := by
+theorem revert_basic (P Q : Prop) (hp : P) (_hq : Q) : P := by
   -- ⊢ `P`
-  -- `hp : P`, `hq : Q`
-  revert hq
-  -- `hq` is moved back: ⊢ `Q → P`
-  intro _
+  -- `hp : P`, `_hq : Q`
+  revert _hq; intro _
   -- ⊢ `P`
   exact hp
 
@@ -93,11 +91,11 @@ is no longer needed.
 
 Example: from `P` and `Q`, prove `P`, then clear `Q`.
 -/
-theorem clear_basic (P Q : Prop) (hp : P) (hq : Q) : P := by
+theorem clear_basic (P Q : Prop) (hp : P) (_hq : Q) : P := by
   -- ⊢ `P`
-  -- `hp : P`, `hq : Q`
-  clear hq
-  -- `hq` removed; ⊢ `P`
+  -- `hp : P`, `_hq : Q`
+  clear _hq
+  -- `_hq` removed; ⊢ `P`
   exact hp
 
 /--
@@ -105,9 +103,9 @@ theorem clear_basic (P Q : Prop) (hp : P) (hq : Q) : P := by
 
 Example: `P → P`, clearing unused `Q` and `R`.
 -/
-theorem clear_multi (P Q R : Prop) (hp : P) (hq : Q) (hr : R) : P := by
+theorem clear_multi (P Q R : Prop) (hp : P) (_hq : Q) (_hr : R) : P := by
   -- ⊢ `P`
-  clear hq hr
+  clear _hq _hr
   exact hp
 
 /--
