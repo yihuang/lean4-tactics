@@ -193,9 +193,9 @@ pattern.  This is different from `rename_i`, which renames by binder position.
 
 Example: rename a hypothesis of type `P` to `myP`.
 +-/
-theorem rename_by_type (P Q : Prop) (hp : P) (hq : Q) : P := by
+theorem rename_by_type (P Q : Prop) (hp : P) (_hq : Q) : P := by
   -- ⊢ `P`
-  -- `hp : P`, `hq : Q`
+  -- `hp : P`, `_hq : Q`
   rename P => myP
   -- `myP : P` (hp is now named myP)
   exact myP
