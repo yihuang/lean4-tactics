@@ -8,3 +8,5 @@ import Lean4Tactics.Hypothesis
 import Lean4Tactics.Calculation
 import Lean4Tactics.Control
 import Lean4Tactics.Advanced
+import Lean4Tactics.Grind
+import Lean4Tactics.Mvcgen

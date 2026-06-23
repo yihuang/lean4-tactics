@@ -21,6 +21,8 @@ the Lean infoview.
 | `Calculation` | `calc`, `omega`, `decide`, `native_decide` |
 | `Control` | `all_goals`, `any_goals`, `first`, `try`, `repeat`, `focus`, `case` |
 | `Advanced` | `unfold`, `change`, `show`, `match` |
+| `Grind` | `grind` (SMT automation: congruence closure, arithmetic, E‑matching) |
+| `Mvcgen` | `mvcgen` (monadic verification condition generator) |
 
 ## How to use
 
