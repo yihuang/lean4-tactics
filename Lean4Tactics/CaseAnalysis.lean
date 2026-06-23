@@ -109,9 +109,9 @@ theorem constructor_and_comm (P Q : Prop) : P ∧ Q → Q ∧ P := by
   -- `h : P ∧ Q`
   -- ⊢  `Q ∧ P`
   constructor
-  -- First subgoal: `Q`
+  -- ⊢ `Q`
   · exact h.right
-  -- Second subgoal: `P`
+  -- ⊢ `P`
   · exact h.left
 
 /--
@@ -120,18 +120,22 @@ theorem constructor_and_comm (P Q : Prop) : P ∧ Q → Q ∧ P := by
 Example: `P ∧ Q ↔ Q ∧ P`.
 -/
 theorem split_iff_and_comm (P Q : Prop) : (P ∧ Q) ↔ (Q ∧ P) := by
-  -- ⊢  `(P ∧ Q) ↔ (Q ∧ P)`
+  -- ⊢ `(P ∧ Q) ↔ (Q ∧ P)`
   constructor
-  -- Subgoal 1: `(P ∧ Q) → (Q ∧ P)`
-  · intro h
+  · -- ⊢ `(P ∧ Q) → (Q ∧ P)`
+    intro h
     constructor
-    · exact h.right
-    · exact h.left
-  -- Subgoal 2: `(Q ∧ P) → (P ∧ Q)`
-  · intro h
+    · -- ⊢ `Q`
+      exact h.right
+    · -- ⊢ `P`
+      exact h.left
+  · -- ⊢ `(Q ∧ P) → (P ∧ Q)`
+    intro h
     constructor
-    · exact h.right
-    · exact h.left
+    · -- ⊢ `P`
+      exact h.right
+    · -- ⊢ `Q`
+      exact h.left
 
 /--
 `left` / `right`: pick which side of a disjunction (`Or`) to prove.
@@ -183,7 +187,7 @@ theorem cases_or_comm (P Q : Prop) : P ∨ Q → Q ∨ P := by
 Example: `∃ n, n = 0`.
 -/
 theorem exists_example : ∃ n : Nat, n = 0 := by
-  -- ⊢  `∃ n, n = 0`
+  -- ⊢ `∃ n, n = 0`
   refine ⟨0, ?_⟩
-  -- Subgoal: `0 = 0`
+  -- ⊢ `0 = 0`
   rfl

@@ -72,17 +72,14 @@ term incrementally.
 Example: prove `P ∧ Q → Q ∧ P` using `refine`.
 -/
 theorem basic_refine_and_comm (P Q : Prop) : P ∧ Q → Q ∧ P := by
-  -- ⊢  `P ∧ Q → Q ∧ P`
+  -- ⊢ `P ∧ Q → Q ∧ P`
   intro h
   -- `h : P ∧ Q`
-  -- ⊢  `Q ∧ P`
+  -- ⊢ `Q ∧ P`
   refine And.intro ?_ ?_
-  -- Two new subgoals: `Q` and `P`
-  -- `h : P ∧ Q`
-  -- ⊢  `Q`
+  -- ⊢ `Q`
   · exact h.right
-  -- `h : P ∧ Q`
-  -- ⊢  `P`
+  -- ⊢ `P`
   · exact h.left
 
 /--
@@ -110,5 +107,5 @@ theorem basic_combined (P Q R : Prop) : (P → Q → R) → (P → Q) → P → 
   -- `hp : P`, `hpq : P → Q`, `hpqr : P → Q → R`
   -- ⊢  `R`
   refine hpqr hp ?_
-  -- Subgoal: `Q`
+  -- ⊢ `Q`
   exact hpq hp

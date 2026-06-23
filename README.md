@@ -34,18 +34,25 @@ Then open any `.lean` file in VS Code with the [lean4](https://marketplace.visua
 Place the cursor on a tactic line — the infoview shows the goal before and after.
 Every theorem compiles and runs standalone; no external dependencies.
 
-## Goal comments
+## Annotation style
 
-All files use a consistent annotation style:
+Each step is annotated with the goal state and context changes:
 
 ```
--- ⊢  current goal         (target type)
--- h₁ : P                   (new hypothesis added by the tactic)
--- two subgoals: `P` and `Q`  (new goals generated)
+-- ⊢ P → Q              (goal before the tactic)
+intro h
+-- h : P                 (new hypothesis)
+-- ⊢ Q                  (updated goal after the tactic)
+
+refine And.intro ?_ ?_
+-- ⊢ P                  (subgoal inside the first branch)
+· exact hp
+-- ⊢ Q                  (subgoal inside the second branch)
+· exact hq
 ```
 
 ## Requirements
 
-- [elan](https://github.com/leanprover/elan) (Lean version manager)
+- [elan](https://github.com/leanprover/elan) (Lean version manager, includes `lake`)
 - Lean 4 (toolchain: `leanprover/lean4:v4.30.0-rc1`)
 - VSCode + [lean4 extension](https://marketplace.visualstudio.com/items?itemName=leanprover.lean4)

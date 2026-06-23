@@ -13,8 +13,8 @@ Example: prove `P ∧ P` by using `all_goals` to apply `exact hp` to both subgoa
 theorem all_goals_basic (P : Prop) (hp : P) : P ∧ P := by
   -- ⊢ `P ∧ P`
   constructor
-  -- Two subgoals: `P` and `P`
   all_goals
+    -- ⊢ `P`
     exact hp
 
 /--
@@ -114,16 +114,14 @@ theorem repeat_rw (a b : Nat) (h : a = b) : (a + a) + a = (b + b) + b := by
 `focus` temporarily isolates the current goal; other goals are suspended.
 Useful when you want to work on one goal without seeing others.
 
-Example: building a conjunction with focused sub-proofs.
 -/
 theorem focus_basic (P Q : Prop) (hp : P) (hq : Q) : P ∧ Q := by
   -- ⊢ `P ∧ Q`
   constructor
-  · -- first subgoal
+  · -- ⊢ `P`
     focus
-    -- Other goals are suspended
     exact hp
-  · -- second subgoal
+  · -- ⊢ `Q`
     exact hq
 
 /--
