@@ -1,0 +1,10 @@
+name = "lean4-tactics"
+version = "0.1.0"
+defaultTargets = ["lean4-tactics"]
+
+[[lean_lib]]
+name = "Lean4Tactics"
+
+[[lean_exe]]
+name = "lean4-tactics"
+root = "Main"
