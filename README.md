@@ -25,6 +25,7 @@ the Lean infoview.
 | `Mvcgen` | `mvcgen` (monadic verification condition generator) |
 | `Relation` | `symm`, `apply_assumption`, `ac_rfl` |
 | `Verification` | software verification patterns: `induction`, `omega`, `calc`, `native_decide`, `simp`, `by_cases` |
+| `Compiler` | compiler correctness: `induction`, `calc`, `simpa`, structural recursion |
 
 ## How to use
 

@@ -1,3 +1,6 @@
+set_option linter.unusedVariables false
+set_option linter.unusedSimpArgs false
+
 /-
 # Software Formal Verification Examples
 
@@ -25,16 +28,16 @@ theorem fact_pos (n : Nat) : 0 < fact n := by
 /-! ## Arithmetic Safety -/
 
 /-- `safe_div` checks for zero before dividing. -/
-theorem safe_div_pos (a b : Nat) (_h : b > 0) : safe_div a b = some (a / b) := by
+def safeDiv (a b : Nat) : Option Nat :=
   if h : b > 0 then some (a / b) else none
 
-/-- `safe_div` returns `some` iff the divisor is positive. -/
-theorem safe_div_pos (a b : Nat) (h : b > 0) : safe_div a b = some (a / b) := by
-  unfold safe_div; simp [h]
+/-- `safeDiv` returns `some` iff the divisor is positive. -/
+theorem safe_div_pos (a b : Nat) (h : b > 0) : safeDiv a b = some (a / b) := by
+  unfold safeDiv; simp [h]
 
-/-- `safe_div` returns `none` when divisor is zero. -/
-theorem safe_div_zero (a : Nat) : safe_div a 0 = none := by
-  unfold safe_div; simp
+/-- `safeDiv` returns `none` when divisor is zero. -/
+theorem safe_div_zero (a : Nat) : safeDiv a 0 = none := by
+  unfold safeDiv; simp
 
 /-! ## List Properties -/
 
@@ -50,12 +53,6 @@ theorem map_append (f : Nat → Nat) (xs ys : List Nat) :
   induction xs with
   | nil => rfl
   | cons x xs ih => simp [ih]
-
-/-- `length (xs ++ ys) = length xs + length ys`. -/
-theorem length_append (xs ys : List Nat) : (xs ++ ys).length = xs.length + ys.length := by
-  induction xs with
-  | nil => simp
-  | cons x xs ih => simp [ih]; omega
 
 /-! ## Termination & Structural Recursion -/
 
@@ -83,14 +80,14 @@ def longestPrefix (p : Nat → Bool) (xs : List Nat) : Nat :=
   | x :: xs' => if p x then 1 + longestPrefix p xs' else 0
 
 /-- If `p` holds for every element, `longestPrefix` returns the full length. -/
-theorem longestPrefix_all (p : Nat → Bool) (xs : List Nat) (hall : ∀ x ∈ xs, p x) :
+theorem longestPrefix_all (p : Nat → Bool) (xs : List Nat) (h : ∀ x ∈ xs, p x) :
     longestPrefix p xs = xs.length := by
   induction xs with
   | nil => rfl
   | cons x xs ih =>
-    have hx : p x := hall x (by simp)
+    have hx : p x := h x (by simp)
     have hrest : ∀ y ∈ xs, p y := by
-      intro y hy; exact hall y (by simp [hy])
+      intro y hy; exact h y (by simp [hy])
     simp [longestPrefix, hx, ih hrest]; omega
 
 /-! ## State Machine: Counter -/
@@ -98,18 +95,18 @@ theorem longestPrefix_all (p : Nat → Bool) (xs : List Nat) (hall : ∀ x ∈ x
 structure Counter where
   value : Nat
 
-def counter_inc (c : Counter) : Counter :=
+def inc (c : Counter) : Counter :=
   { c with value := c.value + 1 }
 
-def counter_dec (c : Counter) : Counter :=
+def dec (c : Counter) : Counter :=
   { c with value := c.value - 1 }
 
-theorem longestPrefix_all (p : Nat → Bool) (xs : List Nat) (_hall : ∀ x ∈ xs, p x) :
+def readCounter (c : Counter) : Nat := c.value
 
 /-- `inc` then `dec` is identity when `value > 0`. -/
 theorem inc_dec_identity (c : Counter) (h : c.value > 0) :
-    counter_read (counter_dec (counter_inc c)) = counter_read c := by
-  unfold counter_read counter_inc counter_dec
+    readCounter (dec (inc c)) = readCounter c := by
+  unfold readCounter inc dec
   rw [Nat.add_sub_cancel]
 
 /-! ## Invariant: Accumulator Pattern -/

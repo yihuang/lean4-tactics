@@ -12,3 +12,4 @@ import Lean4Tactics.Relation
 import Lean4Tactics.Grind
 import Lean4Tactics.Mvcgen
 import Lean4Tactics.Verification
+import Lean4Tactics.Compiler
