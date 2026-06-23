@@ -186,3 +186,56 @@ theorem generalize_basic (a b : Nat) : (a + b) * 0 = 0 := by
   -- `h : a + b = s`
   -- ⊢ `s * 0 = 0`
   simp
+
+/--
+`rename` renames the most recent hypothesis whose *type* matches the given
+pattern.  This is different from `rename_i`, which renames by binder position.
+
+Example: rename a hypothesis of type `P` to `myP`.
++-/
+theorem rename_by_type (P Q : Prop) (hp : P) (hq : Q) : P := by
+  -- ⊢ `P`
+  -- `hp : P`, `hq : Q`
+  rename P => myP
+  -- `myP : P` (hp is now named myP)
+  exact myP
+
+/--
+`rename` can disambiguate when multiple hypotheses have the same type;
+it always targets the most recent one whose type matches the pattern.
+
+Example: rename a hypothesis of type `P → Q`.
++-/
+theorem rename_function_type (P Q : Prop) (h : P → Q) (hp : P) : Q := by
+  -- ⊢ `Q`
+  rename P → Q => himpl
+  -- `himpl : P → Q`
+  exact himpl hp
+
+/--
+`subst_vars`: applies `subst` to every hypothesis of the form `h : x = t`
+or `h : t = x`, eliminating all such equations at once.
+Useful for cleaning up a context full of equalities.
+
+Example: from `h₁ : a = 5`, `h₂ : b = 3`, prove `a + b = 8`.
++-/
+theorem subst_vars_basic (a b : Nat) (h₁ : a = 5) (h₂ : b = 3) : a + b = 8 := by
+  -- ⊢ `a + b = 8`
+  subst_vars
+  -- `a` replaced by `5`, `b` replaced by `3` everywhere
+  -- ⊢ `5 + 3 = 8`
+  rfl
+
+/--
+`subst_vars` avoids naming each equation individually.  It substitutes
+all matching hypotheses at once.
+
+Example: with multiple equations, all are substituted.
++-/
+theorem subst_vars_multi (a b c : Nat) (h₁ : a = b) (h₂ : b = c) : a = c := by
+  -- ⊢ `a = c`
+  subst_vars
+  -- `a = b` and `b = c` are both substituted
+  -- After substitution, `a` and `b` are replaced by `c`:
+  -- ⊢ `c = c`
+  rfl

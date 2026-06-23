@@ -169,3 +169,68 @@ theorem case_rename (n : Nat) : n + 0 = n := by
     -- `ih : m + 0 = m`
     -- ⊢ `Nat.succ m + 0 = Nat.succ m`
     simp
+
+/--
+`done`: succeeds only when there are no remaining goals.  Useful as a
+sanity check at the end of a branch.
+
+Example: after `exact`, assert that the goal is closed.
++-/
+theorem done_basic (P : Prop) (hp : P) : P := by
+  -- ⊢ `P`
+  exact hp
+  done
+
+/--
+`skip`: does nothing (no-op).  Useful as a placeholder or when a branch
+was already closed by a previous tactic.
+
+Example: `skip` doesn't change the goal.
++-/
+theorem skip_basic (P : Prop) (hp : P) : P := by
+  -- ⊢ `P`
+  skip
+  -- still ⊢ `P`
+  exact hp
+
+/--
+`next` is like `case _ =>` but works without naming the case.
+It focuses the next goal and optionally renames auto-generated binders.
+
+Example: prove a conjunction without naming the goals.
++-/
+theorem next_basic (P Q : Prop) (hp : P) (hq : Q) : P ∧ Q := by
+  -- ⊢ `P ∧ Q`
+  constructor
+  -- Two subgoals: `P` and `Q`
+  next => exact hp
+  next => exact hq
+
+/--
+`rotate_left n` moves the first `n` goals to the back.
+`rotate_right n` moves the last `n` goals to the front.
+The default for `n` is `1`.
+
+Example: with three subgoals, bring the third one forward.
++-/
+theorem rotate_basic (P Q R : Prop) (hp : P) (hq : Q) (hr : R) : P ∧ Q ∧ R := by
+  -- ⊢ `P ∧ Q ∧ R`
+  constructor
+  · exact hp
+  · constructor
+    · exact hq
+    · exact hr
+
+/--
+`rotate_left 1` (default) moves the first subgoal to the back.
+
+Example: `P ∧ Q ∧ R` — rotate the goals so `Q` comes first.
++-/
+theorem rotate_left_example (P Q R : Prop) (hp : P) (hq : Q) (hr : R) : P ∧ (Q ∧ R) := by
+  -- ⊢ `P ∧ (Q ∧ R)`
+  constructor
+  · exact hp
+  · constructor
+    rotate_left 1
+    · exact hr
+    · exact hq

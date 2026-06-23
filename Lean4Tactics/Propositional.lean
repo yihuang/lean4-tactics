@@ -131,3 +131,28 @@ theorem case_analysis_comb (P Q : Prop) : (P → Q) → (¬ P → Q) → Q := by
     exact hPQ h
   · -- `h : ¬ P` → get `Q` via `hnPQ`
     exact hnPQ h
+
+/--
+`classical tacs`: runs `tacs` in a scope where `Classical.propDecidable` is
+available as a local instance.  This enables `dec_trivial` and `by_cases`
+for any proposition, and gives access to the law of excluded middle.
+
+Example: `P ∨ ¬ P` is provable classically but not constructively.
++-/
+theorem classical_lem (P : Prop) : P ∨ ¬ P := by
+  -- ⊢ `P ∨ ¬ P`
+  classical
+  exact Classical.em P
+
+/--
+Within a `classical` block, `by_cases` works for any proposition
+(not just decidable ones).
+
+Example: case analysis on an arbitrary `P`.
++-/
+theorem classical_by_cases (P Q : Prop) (h₁ : P → Q) (h₂ : ¬ P → Q) : Q := by
+  -- ⊢ `Q`
+  classical
+  by_cases h : P
+  · exact h₁ h
+  · exact h₂ h
