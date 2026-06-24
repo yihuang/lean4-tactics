@@ -371,13 +371,11 @@ def inCrit (t : Tid) (s : State) : Prop := s.loc t = Loc.crit
 def starvationFree (t : Tid) (σ : LTL.Trace State) : Prop :=
   always σ (λ s => waiting t s → eventually σ (inCrit t))
 
-def rank (t : Tid) (s : State) : Nat × Nat × Nat :=
-  (if s.turn = t then 0 else 1,
-   match s.loc t with | Loc.crit => 0 | Loc.wait => 1 | Loc.idle => 2,
-   match s.loc (flip t) with | Loc.crit => 0 | Loc.wait => 1 | Loc.idle => 2)
+/-! ## Starvation freedom (key steps) -/
 
-/-! ## Starvation freedom -/
-
+-- The lemma below connects a disabled EnterCrit(t) action to facts about the other thread.
+-- If thread t is stuck at "wait" and EnterCrit(t) is not enabled, then
+-- the other thread's flag must be true AND turn must belong to the other thread.
 theorem not_enabled_enterCrit_imp (t : Tid) (s : State) (h : s.loc t = wait) (hne : ¬ enabled (aEnterCrit t) s) :
     s.flag (flip t) = true ∧ s.turn = flip t := by
   have h_not_guard : ¬ (s.flag (flip t) = false ∨ s.turn = t) := by
@@ -402,6 +400,8 @@ theorem not_enabled_enterCrit_imp (t : Tid) (s : State) (h : s.loc t = wait) (hn
     · exact h
   exact ⟨hflag_true, hturn_flip⟩
 
+-- If EnterCrit(t) is NOT the action taken at a Next step, then thread t's location
+-- stays as "wait" (provided it was "wait" to begin with).
 theorem next_loc_t_stays_wait (t : Tid) (s s' : State) (h : Next s s') (hloc : s.loc t = wait)
     (h_not_enter : ¬ aEnterCrit t s s') : s'.loc t = wait := by
   rcases h with (h|h|h|h|h|h|h)
@@ -438,27 +438,39 @@ theorem next_loc_t_stays_wait (t : Tid) (s s' : State) (h : Next s s') (hloc : s
   · subst h; exact hloc
 
 /-!
-Starvation freedom for Peterson's algorithm under weak fairness of both
-threads' enter-critical-section actions and the other thread's exit action.
+# Starvation freedom
 
-Proof structure:
-1. If t is waiting and never enters crit, then `aEnterCrit t` is never taken
-   and therefore (by WF) is only finitely often enabled.
-2. Beyond the last enabling point, `flag(flip t) = true` and `turn = flip t`
-   forever (otherwise `aEnterCrit t` would be enabled).
-3. By the invariant, `loc(flip t)` is either `wait` or `crit`.
-4. The other thread cannot stay in `wait`: `aEnterCrit(flip t)` is enabled
-   there (`turn = flip t`), and by its WF must be taken, moving it to `crit`.
-5. The other thread cannot stay in `crit`: `aExit(flip t)` is enabled, and by
-   its WF must be taken, setting `flag(flip t) = false`.
-6. Here `aEnterCrit t` is enabled (`flag(flip t) = false`), and by its WF must
-   be taken — contradicting the "never enters crit" assumption.
+Peterson's algorithm guarantees that every waiting thread eventually enters its
+critical section. We prove this under weak fairness of both `EnterCrit` actions
+and the other thread's `Exit` action.
+
+**Proof structure** (6 steps):
+
+1. If thread t is waiting but never enters `crit`, then `EnterCrit(t)` is never
+   taken. By weak fairness (WF), it can only be enabled finitely often — so
+   eventually it becomes *permanently disabled*.
+
+2. Once permanently disabled (and t is stuck at `wait`), the guard condition
+   `flag(flip t) = false ∨ turn = t` must be false, hence
+   `flag(flip t) = true` AND `turn = flip t` forever.
+
+3. By the invariant, `flag = true` implies `loc(flip t) ∈ {wait, crit}`.
+
+4. **Other thread cannot stay in `wait`**: `EnterCrit(flip t)` is enabled there
+   (`turn = flip t`), so by its WF it must be taken, moving `flip t` to `crit`.
+
+5. **Other thread cannot stay in `crit`**: `Exit(flip t)` is enabled there, so
+   by its WF it must be taken, setting `flag(flip t) = false`.
+
+6. Here `EnterCrit(t)` becomes enabled (`flag(flip t) = false`), so by its own
+   WF it must be taken — contradicting the assumption that t never enters `crit`.
 -/
 theorem starvation_free (t : Tid) (σ : LTL.Trace State)
     (hValid : isValid Next σ) (hWF : WF (aEnterCrit t) σ)
     (hWF_other_enter : WF (aEnterCrit (flip t)) σ)
     (hWF_other_exit : WF (aExit (flip t)) σ)
     (hInitInv : Inv (σ 0)) : starvationFree t σ := by
+  -- The invariant holds everywhere because the trace follows Next steps.
   have hInv_all : ∀ n, Inv (σ n) := by
     intro n; induction n with
     | zero => exact hInitInv
@@ -468,16 +480,17 @@ theorem starvation_free (t : Tid) (σ : LTL.Trace State)
   unfold waiting at hwait
   have hloc_wait : (σ n).loc t = wait := hwait
   by_cases h_enters : eventually σ (inCrit t)
-  · exact h_enters
-  · -- t never enters the critical section; derive contradiction
+  · -- Goal: if t eventually enters crit, we're done.
+    exact h_enters
+  · -- Otherwise, suppose t never enters crit. We'll derive a contradiction.
     have h_never_crit : ∀ m, (σ m).loc t ≠ crit := by
       intro m hm; apply h_enters; exact ⟨m, hm⟩
     have h_never_taken : ∀ m ≥ n, ¬ takenAt (aEnterCrit t) σ m := by
       intro m hm htaken
       rcases htaken with ⟨hLoc, hGuard, hEq⟩
-      have hcrit : (σ (m+1)).loc t = crit := by
-        simp [hEq]
+      have hcrit : (σ (m+1)).loc t = crit := by simp [hEq]
       exact h_never_crit (m+1) hcrit
+    -- Step 1: by WF, EnterCrit(t) is not infinitely often enabled.
     have h_not_inf_enabled : ¬ infOftenEnabled (aEnterCrit t) σ := by
       intro h_inf
       have h_inf_taken : infOftenTaken (aEnterCrit t) σ := hWF h_inf
@@ -489,18 +502,19 @@ theorem starvation_free (t : Tid) (σ : LTL.Trace State)
       · exact h
       · exfalso
         apply h_not_inf_enabled
-        intro n
-        by_cases h_ex : ∃ m, m ≥ n ∧ enabled (aEnterCrit t) (σ m)
+        intro n'
+        by_cases h_ex : ∃ m, m ≥ n' ∧ enabled (aEnterCrit t) (σ m)
         · exact h_ex
         · exfalso
           apply h
-          refine ⟨n, λ m hm hm_en => h_ex ?_⟩
+          refine ⟨n', λ m hm hm_en => h_ex ?_⟩
           exact ⟨m, hm, hm_en⟩
     rcases h_exists_N with ⟨N, hN⟩
     let M := max n N
     have hM_ge_n : M ≥ n := Nat.le_max_left _ _
     have hM_range : ∀ m ≥ M, ¬ enabled (aEnterCrit t) (σ m) := by
       intro m hm; apply hN m; exact Nat.le_trans (Nat.le_max_right _ _) hm
+    -- t stays at wait from n onward.
     have h_always_wait : ∀ m, n ≤ m → (σ m).loc t = wait := by
       intro m hm
       induction hm with
@@ -513,6 +527,7 @@ theorem starvation_free (t : Tid) (σ : LTL.Trace State)
           apply h_never_taken k h
           exact h_enter
         exact next_loc_t_stays_wait t (σ k) (σ (k+1)) hstep ih h_not_enter
+    -- Step 2: from M onward, flag(flip t) = true and turn = flip t.
     have h_flag_turn : ∀ m ≥ M, (σ m).flag (flip t) = true ∧ (σ m).turn = flip t := by
       intro m hm
       have h_wait : (σ m).loc t = wait := h_always_wait m (Nat.le_trans hM_ge_n hm)
@@ -522,23 +537,17 @@ theorem starvation_free (t : Tid) (σ : LTL.Trace State)
       λ m hm => (h_flag_turn m hm).1
     have h_turn : ∀ m ≥ M, (σ m).turn = flip t :=
       λ m hm => (h_flag_turn m hm).2
+    -- Step 3: from M onward, loc(flip t) is either wait or crit.
     have h_loc_other : ∀ m ≥ M, (σ m).loc (flip t) = wait ∨ (σ m).loc (flip t) = crit := by
       intro m hm
       rcases hInv_all m with ⟨_, _, hFlagLoc, _, _, _⟩
       have hflag : (σ m).flag (flip t) = true := h_flag m hm
       exact hFlagLoc (flip t) hflag
-    -- Case analysis on flip t's location
+    -- Step 4 & 5: the other thread cannot stay forever in wait or in crit.
     by_cases h_crit_ever : ∃ m ≥ M, (σ m).loc (flip t) = crit
     · rcases h_crit_ever with ⟨m0, hm0, h_crit⟩
       have h_wait_m0 : (σ m0).loc t = wait := h_always_wait m0 (Nat.le_trans hM_ge_n hm0)
-      -- flip t is in crit at m0; aExit(flip t) is enabled there
-      have h_exit_enabled_m0 : enabled (aExit (flip t)) (σ m0) := by
-        unfold enabled aExit
-        refine ⟨{ loc := λ t' => if t' = flip t then idle else (σ m0).loc t'
-                , flag := λ t' => if t' = flip t then false else (σ m0).flag t'
-                , turn := (σ m0).turn, x := (σ m0).x + 1 }, h_crit, ?_⟩
-        rfl
-      -- Lemma: if flip t is in crit at σ(k) and aExit(flip t) is NOT taken at step k, then it stays in crit at σ(k+1)
+      -- Lemma: if flip t is in crit and aExit(flip t) is NOT taken, loc stays crit.
       have crit_persists_lemma : ∀ (s s' : State), Next s s' → s.loc (flip t) = crit → ¬ aExit (flip t) s s' → s'.loc (flip t) = crit := by
         intro s s' hNext hCrit hNotExit
         rcases hNext with (h|h|h|h|h|h|h)
@@ -569,7 +578,7 @@ theorem starvation_free (t : Tid) (σ : LTL.Trace State)
             exfalso; exact hNotExit hLoc
           · simp [h']; exact hCrit
         · subst h; exact hCrit
-      -- If aExit(flip t) is never taken from m0 onward, then (σ k).loc (flip t) = crit for all k ≥ m0
+      -- Case A: aExit(flip t) is never taken → stays in crit forever → WF forces it.
       by_cases h_exit_never : ∀ j ≥ m0, ¬ takenAt (aExit (flip t)) σ j
       · have h_all_crit : ∀ k ≥ m0, (σ k).loc (flip t) = crit := by
           intro k hk
@@ -581,7 +590,6 @@ theorem starvation_free (t : Tid) (σ : LTL.Trace State)
             have hcrit_j : (σ j).loc (flip t) = crit := ih
             have h_not_exit_j : ¬ aExit (flip t) (σ j) (σ (j+1)) := h_exit_never j hj
             exact crit_persists_lemma (σ j) (σ (j+1)) hstep hcrit_j h_not_exit_j
-        -- So aExit(flip t) is enabled at all k ≥ m0 (since loc = crit)
         have h_enabled_all : ∀ k ≥ m0, enabled (aExit (flip t)) (σ k) := by
           intro k hk
           have hcrit_k : (σ k).loc (flip t) = crit := h_all_crit k hk
@@ -598,7 +606,7 @@ theorem starvation_free (t : Tid) (σ : LTL.Trace State)
         have h_inf_taken_exit : infOftenTaken (aExit (flip t)) σ := hWF_other_exit h_inf_enabled_exit
         rcases h_inf_taken_exit m0 with ⟨k, hk, h_taken⟩
         exfalso; exact h_exit_never k hk h_taken
-      · -- aExit(flip t) IS taken at some step k ≥ m0
+      · -- Case B: aExit(flip t) IS taken → flag(flip t) becomes false.
         have h_exit_exists : ∃ j ≥ m0, takenAt (aExit (flip t)) σ j := by
           by_cases h_ex : ∃ j ≥ m0, takenAt (aExit (flip t)) σ j
           · exact h_ex
@@ -610,27 +618,26 @@ theorem starvation_free (t : Tid) (σ : LTL.Trace State)
             · exact h_taken
         rcases h_exit_exists with ⟨k, hk, h_taken_k⟩
         rcases h_taken_k with ⟨hLoc_exit, hEq_exit⟩
-        -- After the exit, flag(flip t) = false, so aEnterCrit t becomes enabled
         have h_flag_other_false : (σ (k+1)).flag (flip t) = false := by
           simp [hEq_exit]
         have h_wait_after : (σ (k+1)).loc t = wait :=
           h_always_wait (k+1) (Nat.le_trans (Nat.le_trans hM_ge_n hm0) (Nat.le_trans hk (by omega)))
+        -- Step 6: EnterCrit(t) is enabled (flag false). WF forces it to be taken.
         have h_enter_enabled : enabled (aEnterCrit t) (σ (k+1)) := by
           unfold enabled aEnterCrit
           refine ⟨{ loc := λ t' => if t' = t then crit else (σ (k+1)).loc t'
                   , flag := (σ (k+1)).flag, turn := (σ (k+1)).turn, x := (σ (k+1)).x },
                   h_wait_after, Or.inl h_flag_other_false, ?_⟩
           rfl
-        -- But k+1 ≥ M, contradicting hM_range
         have hk1_ge_M : k+1 ≥ M := Nat.le_trans (Nat.le_trans hm0 hk) (by omega)
         exfalso; exact hM_range (k+1) hk1_ge_M h_enter_enabled
-    · -- flip t is never in crit after M; so always in wait
+    · -- flip t is never in crit → must be in wait forever after M.
       have h_all_wait : ∀ m ≥ M, (σ m).loc (flip t) = wait := by
         intro m hm
         rcases h_loc_other m hm with (h | h)
         · exact h
         · exfalso; exact h_crit_ever ⟨m, hm, h⟩
-      -- aEnterCrit(flip t) is always enabled (loc = wait, turn = flip t)
+      -- EnterCrit(flip t) is enabled everywhere (loc = wait, turn = flip t).
       have h_enter_other_enabled : ∀ m ≥ M, enabled (aEnterCrit (flip t)) (σ m) := by
         intro m hm
         have h_wait_other : (σ m).loc (flip t) = wait := h_all_wait m hm
@@ -645,16 +652,14 @@ theorem starvation_free (t : Tid) (σ : LTL.Trace State)
         let k := max p M
         have hk_ge_M : k ≥ M := Nat.le_max_right _ _
         refine ⟨k, Nat.le_max_left _ _, h_enter_other_enabled k hk_ge_M⟩
+      -- WF(aEnterCrit(flip t)) forces it to be taken → flip t enters crit, contradiction.
       have h_inf_taken_other : infOftenTaken (aEnterCrit (flip t)) σ := hWF_other_enter h_inf_enabled_other
       rcases h_inf_taken_other M with ⟨k, hk, h_taken_other⟩
       rcases h_taken_other with ⟨hLocOther, hGuardOther, hEqOther⟩
-      -- flip t just entered crit; contradiction via h_crit_ever
       have h_crit_after : (σ (k+1)).loc (flip t) = crit := by
         simp [hEqOther]
       have hk1_ge_M : k+1 ≥ M := Nat.le_trans hk (by omega)
       exfalso; exact h_crit_ever ⟨k+1, hk1_ge_M, h_crit_after⟩
-
-
 def σ_demo (n : Nat) : State := match n with
   | 0 => init | 1 => s1 | 2 => s2 | 3 => s3 | 4 => s4 | 5 => s5 | 6 => s6 | _ => s6
 
