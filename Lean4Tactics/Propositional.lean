@@ -1,5 +1,5 @@
 /-
-# Propositional Reasoning: `exfalso`, `by_contra`, `by_cases`, `contradiction`
+# Propositional Reasoning: `exfalso`, `Classical.byContradiction`, `by_cases`, `contradiction`
 
 These tactics handle classical reasoning patterns: proof by contradiction,
 case splitting on a proposition, and deriving conclusions from `False`.
@@ -33,8 +33,9 @@ theorem exfalso_from_contra (P Q : Prop) (h₁ : P) (h₂ : ¬ P) : Q := by
   exact h₁
 
 /--
-`by_contra h`: assumes `¬ goal` and adds `h : ¬ goal` to context.
-Then the goal becomes `False` (classical proof by contradiction).
+Proof by contradiction in core Lean. Mathlib's `by_contra h` tactic is sugar for
+this, but it is not available in a core-only project, so we apply
+`Classical.byContradiction` directly: it turns the goal `G` into `¬ G → False`.
 
 Example: `P ∨ ¬ P` (law of excluded middle, classical).
 -/
@@ -110,11 +111,14 @@ you to produce the contradiction manually; `contradiction` does it all at once.
 Example: from `P` and `¬ P`, prove any `Q` — using `exfalso` step by step.
 -/
 theorem exfalso_vs_contradiction (P Q : Prop) (h₁ : P) (h₂ : ¬ P) : Q := by
-  -- Using `exfalso`:
+  -- The manual `exfalso` way: change the goal to `False`, then derive it.
   exfalso
   -- ⊢ `False`
   apply h₂
   exact h₁
+  -- The one-shot way: `contradiction` alone closes the original goal `Q`,
+  -- spotting that `h₁ : P` and `h₂ : ¬ P` are inconsistent.
+example (P Q : Prop) (h₁ : P) (h₂ : ¬ P) : Q := by contradiction
 
 /--
 Combining `by_cases` with `by_contra`.
@@ -138,7 +142,7 @@ available as a local instance.  This enables `dec_trivial` and `by_cases`
 for any proposition, and gives access to the law of excluded middle.
 
 Example: `P ∨ ¬ P` is provable classically but not constructively.
-+-/
+-/
 theorem classical_lem (P : Prop) : P ∨ ¬ P := by
   -- ⊢ `P ∨ ¬ P`
   classical
@@ -149,7 +153,7 @@ Within a `classical` block, `by_cases` works for any proposition
 (not just decidable ones).
 
 Example: case analysis on an arbitrary `P`.
-+-/
+-/
 theorem classical_by_cases (P Q : Prop) (h₁ : P → Q) (h₂ : ¬ P → Q) : Q := by
   -- ⊢ `Q`
   classical

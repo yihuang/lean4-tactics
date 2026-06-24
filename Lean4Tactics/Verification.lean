@@ -1,3 +1,4 @@
+-- examples name binders/simp lemmas for clarity even when a proof doesn't use them all
 set_option linter.unusedVariables false
 set_option linter.unusedSimpArgs false
 

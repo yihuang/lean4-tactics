@@ -409,11 +409,12 @@ theorem mul_pow (a b n : Nat) : (a * b) ^ n = a ^ n * b ^ n := NNG.mul_pow a b n
 theorem pow_pow (a m n : Nat) : (a ^ m) ^ n = a ^ (m * n) := NNG.pow_pow a m n
 theorem add_sq (a b : Nat) : (a + b) ^ 2 = a ^ 2 + b ^ 2 + 2 * a * b := NNG.add_sq a b
 
-/-- Fermat's Last Theorem (joke level).
-The real proof requires millions of lines of Lean code.
--/
-theorem FLT (a b c n : Nat) : (a + 1) ^ (n + 3) + (b + 1) ^ (n + 3) ≠ (c + 1) ^ (n + 3) := by
-  sorry
+/-- Fermat's Last Theorem — NNG's final "boss" joke level. It is a true theorem
+(Wiles, 1995) but its proof is out of reach here, so we record only its
+*statement* as a `Prop`, rather than fake a proof with `sorry`. Every actual
+level in this file is fully proved. -/
+def FLT : Prop := ∀ a b c n : Nat,
+  (a + 1) ^ (n + 3) + (b + 1) ^ (n + 3) ≠ (c + 1) ^ (n + 3)
 
 end Power
 
@@ -526,8 +527,8 @@ end LessOrEqual
 
 /-! # 8. Advanced Multiplication World
 
-Some levels are left as `sorry` because they require lemmas not available
-in core Lean (they need mathlib's `Nat` theory or `omega`).
+Cancellation and zero-divisor facts, proved with core `Nat` lemmas
+(`Nat.eq_of_mul_eq_mul_left`, `Nat.succ_mul`) and case analysis.
 -/
 
 namespace AdvMultiplication
@@ -547,14 +548,16 @@ theorem eq_succ_of_ne_zero (a : Nat) (h : a ≠ 0) : ∃ d, a = Nat.succ d := by
 theorem one_le_of_ne_zero (a : Nat) (h : a ≠ 0) : 1 ≤ a :=
   Nat.one_le_of_lt (Nat.pos_of_ne_zero h)
 
-theorem mul_left_ne_zero (a b : Nat) (ha : a ≠ 0) : a * b ≠ 0 := by
-  sorry
-
+/-- `a ≠ 0 → b ≤ a * b`. Writing `a = succ d`, `a * b = d*b + b ≥ b`. -/
 theorem le_mul_right (a b : Nat) (h : a ≠ 0) : b ≤ a * b := by
-  sorry
+  obtain ⟨d, rfl⟩ := eq_succ_of_ne_zero a h
+  rw [Nat.succ_mul]
+  exact Nat.le_add_left b (d * b)
 
+/-- `a ≠ 0 → a * b = a → b = 1`. Rewrite `a` as `a * 1`, then cancel `a`. -/
 theorem mul_right_eq_one (a b : Nat) (ha : a ≠ 0) (h : a * b = a) : b = 1 := by
-  sorry
+  have h' : a * b = a * 1 := by rw [Nat.mul_one]; exact h
+  exact Nat.eq_of_mul_eq_mul_left (Nat.pos_of_ne_zero ha) h'
 
 theorem mul_ne_zero (a b : Nat) (ha : a ≠ 0) (hb : b ≠ 0) : a * b ≠ 0 :=
   Nat.mul_ne_zero ha hb
@@ -573,11 +576,9 @@ theorem mul_eq_zero (a b : Nat) (h : a * b = 0) : a = 0 ∨ b = 0 := by
             Nat.mul_pos (Nat.succ_pos a') (Nat.succ_pos b')
           rw [h] at hpos; exact Nat.lt_irrefl 0 hpos
 
-theorem mul_left_cancel (a b c : Nat) (ha : a ≠ 0) (h : a * b = a * c) : b = c := by
-  sorry
-
-theorem mul_right_eq_self (a b : Nat) (ha : a ≠ 0) (h : a * b = a) : b = 1 := by
-  sorry
+/-- `a ≠ 0 → a * b = a * c → b = c`. Left cancellation via `Nat.eq_of_mul_eq_mul_left`. -/
+theorem mul_left_cancel (a b c : Nat) (ha : a ≠ 0) (h : a * b = a * c) : b = c :=
+  Nat.eq_of_mul_eq_mul_left (Nat.pos_of_ne_zero ha) h
 
 end AdvMultiplication
 

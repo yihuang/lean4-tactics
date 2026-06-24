@@ -64,7 +64,7 @@ theorem apply_assumption_direct (P : Prop) (hp : P) : P := by
 it with `apply_assumption` which also tries `assumption` on the premises.
 
 Example: from `h : P → Q` and `hp : P`, prove `Q`.
-+-/
+-/
 theorem apply_assumption_imp (P Q : Prop) (h : P → Q) (hp : P) : Q := by
   -- ⊢ `Q`
   apply_assumption

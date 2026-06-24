@@ -37,7 +37,7 @@ Example: a small integer inequality puzzle.
 -/
 theorem grind_linear_int (x y : Nat) (h : x + y = 10) : x ≤ 10 := by
   -- ⊢ `x ≤ 10`
-  omega
+  grind
 
 /--
 `grind` can prove contradictions from inconsistent integer constraints.

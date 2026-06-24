@@ -1,6 +1,9 @@
 name = "lean4-tactics"
 version = "0.1.0"
-defaultTargets = ["lean4-tactics"]
+# Default to the library: that's the deliverable, and `lake build` then skips
+# linking the exe, whose only output is macOS deployment-target linker warnings.
+# Build the smoke-test exe explicitly with `lake build lean4-tactics`.
+defaultTargets = ["Lean4Tactics"]
 
 [[lean_lib]]
 name = "Lean4Tactics"

@@ -15,19 +15,17 @@ Example: using `Nat.add_comm` to rewrite `n + m` into `m + n`.
 theorem rw_basic (n m : Nat) : n + m = m + n := by
   -- ⊢ `n + m = m + n`
   rw [Nat.add_comm n m]
-  -- After rewrite: goal becomes `m + n = m + n`, which `rw` leaves for us
-  -- ⊢ `m + n = m + n`
+  -- both sides are now `m + n`, so `rw` closes the goal automatically by `rfl`
 
 /--
-`rw ←` (rewrite backwards): apply the equality in reverse.
+`rw ←` (rewrite backwards): apply the equality from right to left.
 
-Example: from `h : a = b`, rewrite `a` to `b` in the goal.
+Example: from `h : a = b`, use `rw [← h]` to rewrite `b` back to `a`.
 -/
-theorem rw_backwards (a b : Nat) (h : a = b) : a + a = b + a := by
-  -- ⊢ `a + a = b + a`
-  rw [h]
-  -- `h` rewrites `a` to `b` in the goal
-  -- ⊢ `b + a = b + a`
+theorem rw_backwards (a b : Nat) (h : a = b) : a + b = a + a := by
+  -- ⊢ `a + b = a + a`
+  rw [← h]
+  -- `← h` rewrites `b` to `a`; both sides become `a + a`, closed by `rfl`
 
 /--
 `rw` at a hypothesis: rewrite inside a hypothesis instead of the goal.
@@ -100,16 +98,15 @@ theorem dsimp_example (x : Nat) : double x = x + x := by
   -- ⊢ `x + x = x + x`
 
 /--
-`simpa`: tries `simp` on the goal, then `exact` — a one-shot finishing move.
+`simpa`: simplify the goal *and* a supplied term, then close —
+`simpa using h` is `simp at h ⊢; exact h` in one move.
 
-Example: prove `0 + n = n` without typing `simp` then `rfl`.
+Example: from `h : a + 0 = b`, prove `a = b`.
 -/
-theorem simpa_example (n : Nat) : (fun x : Nat => 0 + x) n = n := by
-  -- ⊢ `(fun x => 0 + x) n = n`
-  -- `simp` can't handle the lambda directly; `dsimp` first
-  dsimp
-  -- ⊢ `0 + n = n`
-  simp
+theorem simpa_example (a b : Nat) (h : a + 0 = b) : a = b := by
+  -- ⊢ `a = b`    (`h : a + 0 = b`)
+  simpa using h
+  -- `simp` normalises `h` to `a = b`, which matches the goal
 
 /--
 `simp` with all hypotheses via `simp [*]` is not recommended (* is fragile),

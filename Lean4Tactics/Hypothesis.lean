@@ -51,8 +51,9 @@ Example: naming `a + b` for reuse.
 theorem let_basic (a b : Nat) : (a + b) * 2 = (a + b) + (a + b) := by
   -- ⊢ `(a + b) * 2 = (a + b) + (a + b)`
   let s := a + b
-  -- `s : Nat := a + b`
-  -- ⊢ `s * 2 = s + s`
+  -- adds `s : Nat := a + b` to the context; the goal is UNCHANGED — `let` does
+  -- not fold existing `a + b` occurrences into `s` (use Mathlib's `set` for that)
+  -- ⊢ `(a + b) * 2 = (a + b) + (a + b)`
   omega
 
 /--
@@ -110,8 +111,8 @@ theorem clear_multi (P Q R : Prop) (hp : P) (_hq : Q) (_hr : R) : P := by
 
 /--
 `rename_i` renames the most recent binder with an auto-generated name
-(e.g. from `cases` or `induction`). Not to be confused with `rename`,
-which is not a tactic in core Lean 4.
+(e.g. from `cases` or `induction`). Not to be confused with `rename`
+(also a core tactic), which renames by *type* rather than by binder position.
 
 Example: after `induction` without naming, rename the auto-generated variable.
 -/
@@ -192,7 +193,7 @@ theorem generalize_basic (a b : Nat) : (a + b) * 0 = 0 := by
 pattern.  This is different from `rename_i`, which renames by binder position.
 
 Example: rename a hypothesis of type `P` to `myP`.
-+-/
+-/
 theorem rename_by_type (P Q : Prop) (hp : P) (_hq : Q) : P := by
   -- ⊢ `P`
   -- `hp : P`, `_hq : Q`
@@ -205,7 +206,7 @@ theorem rename_by_type (P Q : Prop) (hp : P) (_hq : Q) : P := by
 it always targets the most recent one whose type matches the pattern.
 
 Example: rename a hypothesis of type `P → Q`.
-+-/
+-/
 theorem rename_function_type (P Q : Prop) (h : P → Q) (hp : P) : Q := by
   -- ⊢ `Q`
   rename P → Q => himpl
@@ -218,7 +219,7 @@ or `h : t = x`, eliminating all such equations at once.
 Useful for cleaning up a context full of equalities.
 
 Example: from `h₁ : a = 5`, `h₂ : b = 3`, prove `a + b = 8`.
-+-/
+-/
 theorem subst_vars_basic (a b : Nat) (h₁ : a = 5) (h₂ : b = 3) : a + b = 8 := by
   -- ⊢ `a + b = 8`
   subst_vars
@@ -231,7 +232,7 @@ theorem subst_vars_basic (a b : Nat) (h₁ : a = 5) (h₂ : b = 3) : a + b = 8 :
 all matching hypotheses at once.
 
 Example: with multiple equations, all are substituted.
-+-/
+-/
 theorem subst_vars_multi (a b c : Nat) (h₁ : a = b) (h₂ : b = c) : a = c := by
   -- ⊢ `a = c`
   subst_vars

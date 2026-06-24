@@ -28,14 +28,16 @@ the Lean infoview.
 
 ## Advanced demos
 
-Larger, self-contained formalisation projects that apply the tactics above
-to non-trivial artefacts.
+Larger, self-contained formalisation projects (under `Lean4Tactics/Demos/`) that
+apply the tactics above to non-trivial artefacts.
 
 | Demo | Description |
 |---|---|
 | `Compiler` | Compiler correctness for arithmetic expressions (`Expr` → stack VM). Structural induction, big-step semantics. |
 | `SmallStep` | λ-calculus with de Bruijn indices compiled to a pure stack VM. Small-step (`VMStep`/`VMExec`) and big-step (`Eval`) semantics, equivalence proof. |
-| `NaturalNumberGame` | Complete transcription of the [Natural Number Game](https://adam.math.hhu.de/#/g/leanprover-community/nng4) — 9 worlds, 111 theorems. Re-proves addition, multiplication, exponentiation, inequalities, and cancellation laws from Peano axioms. |
+| `NaturalNumberGame` | Transcription of the [Natural Number Game](https://adam.math.hhu.de/#/g/leanprover-community/nng4) — 9 worlds, ~110 theorems on addition, multiplication, exponentiation, inequalities, and cancellation laws, all fully proved. NNG's `FLT` joke boss is recorded as a `Prop` statement only (it is Fermat's Last Theorem). |
+| `TLA` | TLA+-style state-transition verification: Peterson's two-thread mutual-exclusion algorithm, with the mutual-exclusion safety invariant and a liveness proof. |
+| `LTL` | A generic Linear Temporal Logic library over infinite traces (`Nat → α`): the `○`/`□`/`◇`/`𝒰` operators and their laws. |
 
 ## How to use
 
@@ -47,7 +49,7 @@ lake build
 
 Then open any `.lean` file in VS Code with the [lean4](https://marketplace.visualstudio.com/items?itemName=leanprover.lean4) extension.
 Place the cursor on a tactic line — the infoview shows the goal before and after.
-Every theorem compiles and runs standalone; no external dependencies.
+Every theorem compiles and is fully proved standalone — no external dependencies, no `sorry`.
 
 ## Annotation style
 

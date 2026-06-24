@@ -44,12 +44,12 @@ theorem any_goals_basic (a b : Nat) : (0 + a = a) ∧ (b + 0 = b) := by
 
 Example: try `rfl`, then `simp`, then `omega`.
 -/
-theorem first_tactics (a b : Nat) (h : a = b) : a + 0 = b := by
-  -- ⊢ `a + 0 = b`
+theorem first_tactics (a b : Nat) (h : a = b) : 0 + a = b := by
+  -- ⊢ `0 + a = b`
   first
-  | exact h    -- `a = b` does not match `a + 0 = b`
-  | rw [h]     -- this succeeds: rewrites `a` to `b`
-  | simp
+  | exact h    -- fails: `0 + a` is not definitionally `a`, so `h : a = b` doesn't match
+  | rfl        -- fails: the two sides are not definitionally equal
+  | simp [h]   -- succeeds and closes: rewrites `0 + a → a`, then uses `h`
 
 /--
 `first` is useful for fallback logic: try a fast tactic, fall back to a slower one.
@@ -59,7 +59,7 @@ Example: fallback chain.
 theorem first_fallback (n : Nat) : 0 + n = n := by
   -- ⊢ `0 + n = n`
   first
-  | rfl       -- `0 + n` is NOT definitionally `n` (Nat addition is defined by recursion on the first arg)
+  | rfl       -- fails: `0 + n` is not definitionally `n` (Nat addition recurses on the *second* arg, so `0 + n` doesn't reduce for variable `n`)
   | simp      -- `simp` works
   | omega
 
@@ -72,8 +72,8 @@ Example: try `simp` on each goal, don't stop if one goal doesn't simplify.
 theorem try_basic (a b : Nat) : (a + 0 = a) ∧ (0 + b = b) := by
   -- ⊢ `(a + 0 = a) ∧ (0 + b = b)`
   constructor
-  · simp          -- `simp` works: `a + 0 = a`
-  · simp          -- `simp` works: `0 + b = b`
+  -- two goals; blanket-apply `simp` with `try`, so a non-simplifying goal wouldn't abort
+  all_goals try simp
 
 /--
 `try` with a failing tactic: `try` absorbs the failure.
@@ -96,7 +96,7 @@ theorem repeat_intro (P Q R : Prop) : P → Q → R → P := by
   -- ⊢ `P → Q → R → P`
   repeat intro
   -- After `repeat intro`, all antecedents are introduced
-  -- `a✝ : P`, `a✝¹ : Q`, `a✝² : R`
+  -- `a✝² : P`, `a✝¹ : Q`, `a✝ : R`
   -- ⊢ `P`
   assumption
 
@@ -175,7 +175,7 @@ theorem case_rename (n : Nat) : n + 0 = n := by
 sanity check at the end of a branch.
 
 Example: after `exact`, assert that the goal is closed.
-+-/
+-/
 theorem done_basic (P : Prop) (hp : P) : P := by
   -- ⊢ `P`
   exact hp
@@ -186,7 +186,7 @@ theorem done_basic (P : Prop) (hp : P) : P := by
 was already closed by a previous tactic.
 
 Example: `skip` doesn't change the goal.
-+-/
+-/
 theorem skip_basic (P : Prop) (hp : P) : P := by
   -- ⊢ `P`
   skip
@@ -198,7 +198,7 @@ theorem skip_basic (P : Prop) (hp : P) : P := by
 It focuses the next goal and optionally renames auto-generated binders.
 
 Example: prove a conjunction without naming the goals.
-+-/
+-/
 theorem next_basic (P Q : Prop) (hp : P) (hq : Q) : P ∧ Q := by
   -- ⊢ `P ∧ Q`
   constructor
@@ -212,20 +212,22 @@ theorem next_basic (P Q : Prop) (hp : P) (hq : Q) : P ∧ Q := by
 The default for `n` is `1`.
 
 Example: with three subgoals, bring the third one forward.
-+-/
+-/
 theorem rotate_basic (P Q R : Prop) (hp : P) (hq : Q) (hr : R) : P ∧ Q ∧ R := by
   -- ⊢ `P ∧ Q ∧ R`
-  constructor
+  refine ⟨?_, ?_, ?_⟩
+  -- three subgoals in order: `P`, `Q`, `R`
+  rotate_right 1
+  -- now in order: `R`, `P`, `Q` (the last goal moved to the front)
+  · exact hr
   · exact hp
-  · constructor
-    · exact hq
-    · exact hr
+  · exact hq
 
 /--
 `rotate_left 1` (default) moves the first subgoal to the back.
 
 Example: `P ∧ Q ∧ R` — rotate the goals so `Q` comes first.
-+-/
+-/
 theorem rotate_left_example (P Q R : Prop) (hp : P) (hq : Q) (hr : R) : P ∧ (Q ∧ R) := by
   -- ⊢ `P ∧ (Q ∧ R)`
   constructor

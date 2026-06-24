@@ -70,9 +70,11 @@ Example: change `a + 0` to `a`.
 -/
 theorem change_add_zero (a : Nat) : a + 0 = a := by
   -- ⊢ `a + 0 = a`
-  -- `a + 0` is NOT definitionally `a` (Nat addition is defined by recursion on the first arg)
-  -- So `change a = a` would fail here. Use `simp` or `Nat.add_zero`.
-  simp
+  -- `a + 0` IS definitionally `a` (Nat addition recurses on the *second* arg),
+  -- so we can `change` the goal to the syntactically simpler `a = a`.
+  change a = a
+  -- ⊢ `a = a`
+  rfl
 
 /--
 `change` at a hypothesis: works like `change` but in a hypothesis.
@@ -132,7 +134,10 @@ Example: `length (x :: xs) > 0`.
 -/
 theorem match_list (α : Type) (x : α) (xs : List α) : (x :: xs).length > 0 := by
   -- ⊢ `(x :: xs).length > 0`
-  simp
+  -- split `xs` to expose the list shape in each case
+  match xs with
+  | [] => simp
+  | y :: ys => simp
 
 /--
 `match` can be used with `h :` to name the case hypothesis.

@@ -115,7 +115,7 @@ theorem basic_combined (P Q R : Prop) : (P → Q → R) → (P → Q) → P → 
 to synthesize a value of a typeclass goal.
 
 Example: `Decidable (0 = 0)` is solvable by typeclass inference.
-+-/
+-/
 example : Decidable (0 = 0) := by
   -- ⊢ `Decidable (0 = 0)`
   infer_instance
@@ -124,7 +124,7 @@ example : Decidable (0 = 0) := by
 `infer_instance` works for `Inhabited`, `ToString`, and any other typeclass.
 
 Example: `Nat` is inhabited.
-+-/
+-/
 example : Inhabited Nat := by
   -- ⊢ `Inhabited Nat`
   infer_instance
