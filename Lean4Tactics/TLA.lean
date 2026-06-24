@@ -159,6 +159,7 @@ theorem inv_preserved_enterWait (t : Tid) (s s' : State) (hInv : Inv s) (hAct : 
     · simp
     · simp
     · intro h; simp at h
+
 theorem inv_preserved_enterCrit (t : Tid) (s s' : State) (hInv : Inv s) (hAct : aEnterCrit t s s') : Inv s' := by
   rcases hInv with ⟨hCrit, hWait, hFlagLoc, hMutex, hD, hE⟩
   rcases hAct with ⟨hLoc, hGuard, hEq⟩; subst s'
@@ -282,18 +283,7 @@ theorem next_preserves_inv (s s' : State) (hInv : Inv s) (hNext : Next s s') : I
   · subst h; exact hInv
 
 
-/-! ## Trace -/
-
-def s1 : State := { loc := fun | t0 => wait | t1 => idle, flag := fun | t0 => true | t1 => false, turn := t1, x := 0 }
-def s2 : State := { loc := fun | t0 => wait | t1 => wait, flag := fun | t0 => true | t1 => true, turn := t0, x := 0 }
-def s3 : State := { loc := fun | t0 => crit | t1 => wait, flag := fun | t0 => true | t1 => true, turn := t0, x := 0 }
-def s4 : State := { loc := fun | t0 => idle | t1 => wait, flag := fun | t0 => false | t1 => true, turn := t0, x := 1 }
-def s5 : State := { loc := fun | t0 => idle | t1 => crit, flag := fun | t0 => false | t1 => true, turn := t0, x := 1 }
-def s6 : State := { loc := fun | t0 => idle | t1 => idle, flag := fun | t0 => false | t1 => false, turn := t0, x := 2 }
-
-
-
-/-! ## Liveness demo (uses LTL) -/
+/-! ## Liveness property -/
 
 open LTL
 
@@ -591,30 +581,5 @@ theorem starvation_free (t : Tid) (σ : LTL.Trace State)
         simp [hEqOther]
       have hk1_ge_M : k+1 ≥ M := Nat.le_trans hk (by omega)
       exfalso; exact h_crit_ever ⟨k+1, hk1_ge_M, h_crit_after⟩
-def σ_demo (n : Nat) : State := match n with
-  | 0 => init | 1 => s1 | 2 => s2 | 3 => s3 | 4 => s4 | 5 => s5 | 6 => s6 | _ => s6
-
-theorem σ_demo_large (n : Nat) (hn : 6 ≤ n) : σ_demo n = s6 := by
-  unfold σ_demo; match n with | 0|1|2|3|4|5 => omega | 6 => rfl | n+7 => rfl
-
-
-theorem t0_waits_then_enters : starvationFree (Tid.t0) σ_demo := by
-  unfold starvationFree always; intro n hwait; unfold waiting at hwait
-  by_cases h : n < 3
-  · match n with
-    | 0 => simp [init, σ_demo] at hwait
-    | 1 => unfold eventually inCrit; refine ⟨3, ?_⟩; simp [σ_demo, s3]
-    | 2 => unfold eventually inCrit; refine ⟨3, ?_⟩; simp [σ_demo, s3]
-  · have h_ge : 3 ≤ n := by omega
-    have h_not_waiting : ∀ m, 3 ≤ m → (σ_demo m).loc (Tid.t0) ≠ Loc.wait := by
-      intro m hm
-      have h_cases : m = 3 ∨ m = 4 ∨ m = 5 ∨ m = 6 ∨ 7 ≤ m := by omega
-      rcases h_cases with (hm3|hm4|hm5|hm6|hm7)
-      · subst hm3; simp [σ_demo, s3]
-      · subst hm4; simp [σ_demo, s4]
-      · subst hm5; simp [σ_demo, s5]
-      · subst hm6; simp [σ_demo, s6]
-      · have : σ_demo m = s6 := σ_demo_large m (by omega); simp [this, s6]
-    exfalso; exact h_not_waiting n h_ge hwait
 
 end TLA
