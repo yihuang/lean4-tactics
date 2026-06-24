@@ -67,14 +67,26 @@ theorem induction_nat_add_zero (n : Nat) : 0 + n = n := by
       simp
 
 /--
-`induction` with `generalizing`: when the induction hypothesis needs to work
-for all values of a polymorphic parameter.
+`induction ... generalizing x`: revert `x` before inducting, so the induction
+hypothesis is general over `x`. Needed when a recursive call changes `x`.
 
-Example: `Nat.succ` injection lemma via induction.
+Example: a tail-recursive `reverse` equals `List.reverse`. The accumulator
+changes in the recursive call, so the IH must hold for *every* accumulator —
+without `generalizing acc` the proof gets stuck.
 -/
-theorem induction_generalizing (n m : Nat) (h : n = m) : Nat.succ n = Nat.succ m := by
-  -- ⊢  `Nat.succ n = Nat.succ m`
-  rw [h]
+def revAux {α : Type} : List α → List α → List α
+  | acc, []      => acc
+  | acc, x :: xs => revAux (x :: acc) xs
+
+theorem revAux_eq {α : Type} (acc xs : List α) : revAux acc xs = xs.reverse ++ acc := by
+  induction xs generalizing acc with
+  | nil =>
+      -- ⊢  `revAux acc [] = [].reverse ++ acc`
+      simp [revAux]
+  | cons x xs ih =>
+      -- `ih : ∀ acc, revAux acc xs = xs.reverse ++ acc`  (generalized over `acc`)
+      -- ⊢  `revAux acc (x :: xs) = (x :: xs).reverse ++ acc`
+      simp [revAux, ih]
 
 /--
 `injection`: from an equality of two constructor applications, derive equalities
