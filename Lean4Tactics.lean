@@ -14,5 +14,6 @@ import Lean4Tactics.Mvcgen
 import Lean4Tactics.Verification
 import Lean4Tactics.Compiler
 import Lean4Tactics.SmallStep
-import Lean4Tactics.TLA
 import Lean4Tactics.NaturalNumberGame
+import Lean4Tactics.TLA
+import Lean4Tactics.LTL
