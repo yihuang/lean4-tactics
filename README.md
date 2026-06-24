@@ -9,7 +9,7 @@ context comments** showing the goal state (`⊢`) before and after every step.
 Open any file, place your cursor on a tactic, and watch the goal transform in
 the Lean infoview.
 
-## Modules
+## Core tactic modules
 
 | Module | Tactics |
 |---|---|
@@ -25,7 +25,17 @@ the Lean infoview.
 | `Mvcgen` | `mvcgen` (monadic verification condition generator) |
 | `Relation` | `symm`, `apply_assumption`, `ac_rfl` |
 | `Verification` | software verification patterns: `induction`, `omega`, `calc`, `native_decide`, `simp`, `by_cases` |
-| `Compiler` | compiler correctness: `induction`, `calc`, `simpa`, structural recursion |
+
+## Advanced demos
+
+Larger, self-contained formalisation projects that apply the tactics above
+to non-trivial artefacts.
+
+| Demo | Description |
+|---|---|
+| `Compiler` | Compiler correctness for arithmetic expressions (`Expr` → stack VM). Structural induction, big-step semantics. |
+| `SmallStep` | λ-calculus with de Bruijn indices compiled to a pure stack VM. Small-step (`VMStep`/`VMExec`) and big-step (`Eval`) semantics, equivalence proof. |
+| `NaturalNumberGame` | Complete transcription of the [Natural Number Game](https://adam.math.hhu.de/#/g/leanprover-community/nng4) — 9 worlds, 111 theorems. Re-proves addition, multiplication, exponentiation, inequalities, and cancellation laws from Peano axioms. |
 
 ## How to use
 
