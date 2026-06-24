@@ -86,60 +86,31 @@ theorem VMExec_trans {s t u : State} (hst : VMExec s t) (htu : VMExec t u) : VME
   | refl => exact htu
   | step s t' _ h hrest ih => exact VMExec.step s t' u h (ih htu)
 
-def VMExec.step0 {s t : State} (h : VMStep s t) : VMExec s t :=
-  VMExec.step s t t h (VMExec.refl t)
+theorem ret_slide1 (v w : Val) (st : List Val) (env env' : Env) (k : Prog) (dump : List (Prog × Env)) :
+    VMExec (State.mk [ret] (v :: w :: st) (w :: env') ((slide 1 :: k, env) :: dump))
+           (State.mk k (v :: st) env dump) :=
+  VMExec.step _ _ _ (VMStep.ret (v :: w :: st) (w :: env') (slide 1 :: k) env dump) <|
+  VMExec.step _ _ _ (VMStep.slide 1 v (w :: st) k env dump) (VMExec.refl _)
 
 theorem compile_sim (t : Term) (env : Env) (k : Prog) (st : List Val) (dump : List (Prog × Env))
     (v : Val) (h : Eval env t v) :
     VMExec (State.mk (compile t ++ k) st env dump) (State.mk k (v :: st) env dump) := by
   induction h generalizing k st dump
-  case lit env n => exact VMExec.step0 (VMStep.push n k st env dump)
-  case var env i h => exact VMExec.step0 (VMStep.load i k st env dump h)
-  case lam env body => exact VMExec.step0 (VMStep.mkclo (compile body ++ [ret]) k st env dump)
+  case lit env n => exact VMExec.step _ _ _ (VMStep.push n k st env dump) (VMExec.refl _)
+  case var env i h => exact VMExec.step _ _ _ (VMStep.load i k st env dump h) (VMExec.refl _)
+  case lam env body => exact VMExec.step _ _ _ (VMStep.mkclo (compile body ++ [ret]) k st env dump) (VMExec.refl _)
   case iadd env a b va vb ha hb iha ihb =>
     unfold compile
-    have hb_sim : VMExec (State.mk (compile b ++ (compile a ++ [iadd] ++ k)) st env dump)
-                        (State.mk (compile a ++ [iadd] ++ k) (num vb :: st) env dump) :=
-      ihb (compile a ++ [iadd] ++ k) st dump
-    have ha_sim : VMExec (State.mk (compile a ++ [iadd] ++ k) (num vb :: st) env dump)
-                        (State.mk (iadd :: k) (num va :: num vb :: st) env dump) := by
-      simpa using iha (iadd :: k) (num vb :: st) dump
-    have hiadd : VMStep (State.mk (iadd :: k) (num va :: num vb :: st) env dump)
-                       (State.mk k (num (va + vb) :: st) env dump) :=
-      VMStep.iadd va vb k st env dump
-    refine VMExec_trans (by simpa [List.append_assoc] using hb_sim) ?_
-    refine VMExec_trans (by simpa using ha_sim) ?_
-    exact VMExec.step0 hiadd
+    refine VMExec_trans (by simpa [List.append_assoc] using ihb (compile a ++ [iadd] ++ k) st dump) ?_
+    refine VMExec_trans (by simpa using iha (iadd :: k) (num vb :: st) dump) ?_
+    exact VMExec.step _ _ _ (VMStep.iadd va vb k st env dump) (VMExec.refl _)
   case app env fn arg body env' va v hf ha hbody ihf iha ihbody =>
     unfold compile
-    have ha_sim : VMExec (State.mk (compile arg ++ (compile fn ++ (call :: slide 1 :: k))) st env dump)
-                        (State.mk (compile fn ++ (call :: slide 1 :: k)) (va :: st) env dump) :=
-      iha (compile fn ++ (call :: slide 1 :: k)) st dump
-    have hf_sim : VMExec (State.mk (compile fn ++ (call :: slide 1 :: k)) (va :: st) env dump)
-                        (State.mk (call :: slide 1 :: k) (clo (compile body ++ [ret]) env' :: va :: st) env dump) :=
-      ihf (call :: slide 1 :: k) (va :: st) dump
-    have hcall : VMStep
-        (State.mk (call :: slide 1 :: k) (clo (compile body ++ [ret]) env' :: va :: st) env dump)
-        (State.mk (compile body ++ [ret]) (va :: st) (va :: env') ((slide 1 :: k, env) :: dump)) :=
-      VMStep.call (compile body ++ [ret]) env' va (slide 1 :: k) st env dump
-    have hbody_sim : VMExec
-        (State.mk (compile body ++ [ret]) (va :: st) (va :: env') ((slide 1 :: k, env) :: dump))
-        (State.mk [ret] (v :: va :: st) (va :: env') ((slide 1 :: k, env) :: dump)) :=
-      ihbody [ret] (va :: st) ((slide 1 :: k, env) :: dump)
-    have hret : VMStep
-        (State.mk [ret] (v :: va :: st) (va :: env') ((slide 1 :: k, env) :: dump))
-        (State.mk (slide 1 :: k) (v :: va :: st) env dump) :=
-      VMStep.ret (v :: va :: st) (va :: env') (slide 1 :: k) env dump
-    have hslide : VMStep
-        (State.mk (slide 1 :: k) (v :: va :: st) env dump)
-        (State.mk k (v :: st) env dump) :=
-      VMStep.slide 1 v (va :: st) k env dump
-    refine VMExec_trans (by simpa [List.append_assoc] using ha_sim) ?_
-    refine VMExec_trans (by simpa using hf_sim) ?_
-    have hrest : VMExec (State.mk (compile body ++ [ret]) (va :: st) (va :: env') ((slide 1 :: k, env) :: dump))
-                        (State.mk k (v :: st) env dump) :=
-      VMExec_trans hbody_sim (VMExec_trans (VMExec.step0 hret) (VMExec.step0 hslide))
-    apply VMExec.step _ _ _ hcall hrest
+    refine VMExec_trans (by simpa [List.append_assoc] using iha (compile fn ++ (call :: slide 1 :: k)) st dump) ?_
+    refine VMExec_trans (by simpa using ihf (call :: slide 1 :: k) (va :: st) dump) ?_
+    refine VMExec.step _ _ _ (VMStep.call (compile body ++ [ret]) env' va (slide 1 :: k) st env dump) ?_
+    exact VMExec_trans (ihbody [ret] (va :: st) ((slide 1 :: k, env) :: dump))
+                       (ret_slide1 v va st env env' k dump)
 
 theorem compile_correct (t : Term) (env : Env) (v : Val) (h : Eval env t v) :
     VMExec (State.mk (compile t) [] env []) (State.mk [] [v] env []) := by
