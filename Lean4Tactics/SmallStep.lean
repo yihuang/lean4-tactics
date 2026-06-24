@@ -5,8 +5,6 @@ A λ-calculus with de Bruijn indices, compiled to a pure stack machine.
 No `Term` references at runtime — all compilation is done at compile time.
 -/
 
-set_option linter.unusedVariables false
-
 namespace Lambda
 
 inductive Term : Type
@@ -42,15 +40,16 @@ def compile (t : Term) : Prog :=
   | var i   => [load i]
   | lam b   => [mkclo (compile b ++ [ret])]
   | app f a => compile a ++ compile f ++ [call, slide 1]
-  | add a b => compile a ++ compile b ++ [iadd]
+  | add a b => compile b ++ compile a ++ [iadd]
 
 inductive Eval : Env → Term → Val → Prop
   | lit {env n} : Eval env (lit n) (num n)
   | var {env i} (h : i < env.length) : Eval env (var i) (env.get ⟨i, h⟩)
   | lam {env body} : Eval env (lam body) (clo (compile body ++ [ret]) env)
-  | app {env fn arg body env' vf va v}
-      (hf : Eval env fn vf) (ha : Eval env arg va)
-      (hclo : vf = clo (compile body ++ [ret]) env') (hbody : Eval (va :: env') body v) : Eval env (app fn arg) v
+  | app {env fn arg body env' va v}
+      (hf : Eval env fn (clo (compile body ++ [ret]) env'))
+      (ha : Eval env arg va)
+      (hbody : Eval (va :: env') body v) : Eval env (app fn arg) v
   | iadd {env a b va vb}
       (ha : Eval env a (num va)) (hb : Eval env b (num vb)) : Eval env (add a b) (num (va + vb))
 
@@ -87,32 +86,31 @@ theorem VMExec_trans {s t u : State} (hst : VMExec s t) (htu : VMExec t u) : VME
   | refl => exact htu
   | step s t' _ h hrest ih => exact VMExec.step s t' u h (ih htu)
 
+def VMExec.step0 {s t : State} (h : VMStep s t) : VMExec s t :=
+  VMExec.step s t t h (VMExec.refl t)
+
 theorem compile_sim (t : Term) (env : Env) (k : Prog) (st : List Val) (dump : List (Prog × Env))
     (v : Val) (h : Eval env t v) :
     VMExec (State.mk (compile t ++ k) st env dump) (State.mk k (v :: st) env dump) := by
   induction h generalizing k st dump
-  case lit env n =>
-    exact VMExec.step _ _ _ (VMStep.push n k st env dump) (VMExec.refl _)
-  case var env i h =>
-    exact VMExec.step _ _ _ (VMStep.load i k st env dump h) (VMExec.refl _)
-  case lam env body =>
-    exact VMExec.step _ _ _ (VMStep.mkclo (compile body ++ [ret]) k st env dump) (VMExec.refl _)
+  case lit env n => exact VMExec.step0 (VMStep.push n k st env dump)
+  case var env i h => exact VMExec.step0 (VMStep.load i k st env dump h)
+  case lam env body => exact VMExec.step0 (VMStep.mkclo (compile body ++ [ret]) k st env dump)
   case iadd env a b va vb ha hb iha ihb =>
     unfold compile
-    have ha_sim : VMExec (State.mk (compile a ++ (compile b ++ [iadd] ++ k)) st env dump)
-                        (State.mk (compile b ++ [iadd] ++ k) (num va :: st) env dump) :=
-      iha (compile b ++ [iadd] ++ k) st dump
-    have hb_sim : VMExec (State.mk (compile b ++ [iadd] ++ k) (num va :: st) env dump)
-                        (State.mk (iadd :: k) (num vb :: num va :: st) env dump) := by
-      simpa using ihb (iadd :: k) (num va :: st) dump
-    have hiadd : VMStep (State.mk (iadd :: k) (num vb :: num va :: st) env dump)
-                       (State.mk k (num (vb + va) :: st) env dump) :=
-      VMStep.iadd vb va k st env dump
-    refine VMExec_trans (by simpa [List.append_assoc] using ha_sim) ?_
-    refine VMExec_trans (by simpa using hb_sim) ?_
-    simpa [Nat.add_comm] using VMExec.step _ _ _ hiadd (VMExec.refl _)
-  case app env fn arg body env' vf va v hf ha hclo hbody ihf iha ihbody =>
-    subst hclo
+    have hb_sim : VMExec (State.mk (compile b ++ (compile a ++ [iadd] ++ k)) st env dump)
+                        (State.mk (compile a ++ [iadd] ++ k) (num vb :: st) env dump) :=
+      ihb (compile a ++ [iadd] ++ k) st dump
+    have ha_sim : VMExec (State.mk (compile a ++ [iadd] ++ k) (num vb :: st) env dump)
+                        (State.mk (iadd :: k) (num va :: num vb :: st) env dump) := by
+      simpa using iha (iadd :: k) (num vb :: st) dump
+    have hiadd : VMStep (State.mk (iadd :: k) (num va :: num vb :: st) env dump)
+                       (State.mk k (num (va + vb) :: st) env dump) :=
+      VMStep.iadd va vb k st env dump
+    refine VMExec_trans (by simpa [List.append_assoc] using hb_sim) ?_
+    refine VMExec_trans (by simpa using ha_sim) ?_
+    exact VMExec.step0 hiadd
+  case app env fn arg body env' va v hf ha hbody ihf iha ihbody =>
     unfold compile
     have ha_sim : VMExec (State.mk (compile arg ++ (compile fn ++ (call :: slide 1 :: k))) st env dump)
                         (State.mk (compile fn ++ (call :: slide 1 :: k)) (va :: st) env dump) :=
@@ -139,10 +137,8 @@ theorem compile_sim (t : Term) (env : Env) (k : Prog) (st : List Val) (dump : Li
     refine VMExec_trans (by simpa [List.append_assoc] using ha_sim) ?_
     refine VMExec_trans (by simpa using hf_sim) ?_
     have hrest : VMExec (State.mk (compile body ++ [ret]) (va :: st) (va :: env') ((slide 1 :: k, env) :: dump))
-                        (State.mk k (v :: st) env dump) := by
-      refine VMExec_trans hbody_sim ?_
-      refine VMExec_trans (VMExec.step _ _ _ hret (VMExec.refl _)) ?_
-      apply VMExec.step _ _ _ hslide (VMExec.refl _)
+                        (State.mk k (v :: st) env dump) :=
+      VMExec_trans hbody_sim (VMExec_trans (VMExec.step0 hret) (VMExec.step0 hslide))
     apply VMExec.step _ _ _ hcall hrest
 
 theorem compile_correct (t : Term) (env : Env) (v : Val) (h : Eval env t v) :
@@ -151,8 +147,10 @@ theorem compile_correct (t : Term) (env : Env) (v : Val) (h : Eval env t v) :
 
 def exampleTerm : Term := app (lam (add (var 0) (lit 1))) (lit 5)
 
+#eval compile exampleTerm
+
 theorem example_eval : Eval [] exampleTerm (num 6) := by
-  apply Eval.app (Eval.lam) (Eval.lit) rfl
+  apply Eval.app (Eval.lam) (Eval.lit)
   apply Eval.iadd (Eval.var (by decide)) (Eval.lit)
 
 theorem example_correct : VMExec (State.mk (compile exampleTerm) [] [] [])
