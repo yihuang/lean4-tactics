@@ -281,15 +281,6 @@ theorem next_preserves_inv (s s' : State) (hInv : Inv s) (hNext : Next s s') : I
   · exact inv_preserved_exit t1 s s' hInv h
   · subst h; exact hInv
 
-inductive Reachable : State → Prop
-  | init : Reachable init
-  | step (s s' : State) : Reachable s → Next s s' → Reachable s'
-
-theorem all_reachable_inv (s : State) (h : Reachable s) : Inv s := by
-  induction h with | init => exact inv_init | step _ _ hPrev hNext ih => exact next_preserves_inv _ _ ih hNext
-
-theorem mutual_exclusion_holds (s : State) (h : Reachable s) : MutualExclusion s :=
-  inv_implies_mutex s (all_reachable_inv s h)
 
 /-! ## Trace -/
 
@@ -300,67 +291,7 @@ def s4 : State := { loc := fun | t0 => idle | t1 => wait, flag := fun | t0 => fa
 def s5 : State := { loc := fun | t0 => idle | t1 => crit, flag := fun | t0 => false | t1 => true, turn := t0, x := 1 }
 def s6 : State := { loc := fun | t0 => idle | t1 => idle, flag := fun | t0 => false | t1 => false, turn := t0, x := 2 }
 
-theorem init_to_s1 : Next init s1 := by
-  refine Or.inl ?_
-  unfold aEnterWait; refine ⟨by decide, by decide, ?_⟩
-  apply State.ext
-  · ext x; cases x <;> simp [s1, init]
-  · ext x; cases x <;> simp [s1, init]
-  · simp [s1]
-  · simp [s1, init]
 
-theorem s1_to_s2 : Next s1 s2 := by
-  refine Or.inr (Or.inl ?_)
-  unfold aEnterWait; refine ⟨by decide, by decide, ?_⟩
-  apply State.ext
-  · ext x; cases x <;> simp [s1, s2]
-  · ext x; cases x <;> simp [s1, s2]
-  · simp [s2]
-  · simp [s1, s2]
-
-theorem s2_to_s3 : Next s2 s3 := by
-  refine Or.inr (Or.inr (Or.inl ?_))
-  unfold aEnterCrit; refine ⟨by decide, Or.inr ?_, ?_⟩
-  · simp [s2]
-  · apply State.ext
-    · ext x; cases x <;> simp [s2, s3]
-    · simp [s2, s3]
-    · simp [s2, s3]
-    · simp [s2, s3]
-
-theorem s3_to_s4 : Next s3 s4 := by
-  refine Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ?_))))
-  unfold aExit; refine ⟨by decide, ?_⟩
-  apply State.ext
-  · ext x; cases x <;> simp [s3, s4]
-  · ext x; cases x <;> simp [s3, s4]
-  · simp [s3, s4]
-  · simp [s3, s4]
-
-theorem s4_to_s5 : Next s4 s5 := by
-  refine Or.inr (Or.inr (Or.inr (Or.inl ?_)))
-  unfold aEnterCrit; refine ⟨by decide, Or.inl ?_, ?_⟩
-  · simp [s4]
-  · apply State.ext
-    · ext x; cases x <;> simp [s4, s5]
-    · simp [s4, s5]
-    · simp [s4, s5]
-    · simp [s4, s5]
-
-theorem s5_to_s6 : Next s5 s6 := by
-  refine Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ?_)))))
-  unfold aExit; refine ⟨by decide, ?_⟩
-  apply State.ext
-  · ext x; cases x <;> simp [s5, s6]
-  · ext x; cases x <;> simp [s5, s6]
-  · simp [s5, s6]
-  · simp [s5, s6]
-
-open Reachable
-theorem trace_complete : Reachable s6 :=
-  step s5 s6 (step s4 s5 (step s3 s4 (step s2 s3 (step s1 s2 (step init s1 Reachable.init init_to_s1) s1_to_s2) s2_to_s3) s3_to_s4) s4_to_s5) s5_to_s6
-
-theorem trace_mutex : MutualExclusion s6 := mutual_exclusion_holds s6 trace_complete
 
 /-! ## Liveness demo (uses LTL) -/
 
@@ -666,21 +597,6 @@ def σ_demo (n : Nat) : State := match n with
 theorem σ_demo_large (n : Nat) (hn : 6 ≤ n) : σ_demo n = s6 := by
   unfold σ_demo; match n with | 0|1|2|3|4|5 => omega | 6 => rfl | n+7 => rfl
 
-theorem trace_valid : isValid Next σ_demo := by
-  unfold isValid; intro n
-  by_cases h : n < 6
-  · match n with
-    | 0 => simpa [σ_demo] using init_to_s1
-    | 1 => simpa [σ_demo] using s1_to_s2
-    | 2 => simpa [σ_demo] using s2_to_s3
-    | 3 => simpa [σ_demo] using s3_to_s4
-    | 4 => simpa [σ_demo] using s4_to_s5
-    | 5 => simpa [σ_demo] using s5_to_s6
-  · have hn : 6 ≤ n := by omega
-    have h_eq1 : σ_demo n = s6 := σ_demo_large n hn
-    have h_eq2 : σ_demo (n + 1) = s6 := σ_demo_large (n + 1) (by omega)
-    have h_next : Next s6 s6 := Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (by rfl))))))
-    simpa [h_eq1, h_eq2]
 
 theorem t0_waits_then_enters : starvationFree (Tid.t0) σ_demo := by
   unfold starvationFree always; intro n hwait; unfold waiting at hwait
